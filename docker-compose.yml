@@ -46,8 +46,9 @@ services:
       POSTGRES_DB: orion_router
       POSTGRES_USER: router_user
       POSTGRES_PASSWORD: router_pass
-    ports:
-      - "5433:5432" # Host'taki diğer postgres (5432) ile çakışmaması için 5433 portundan açılır.
+    # Dışarıdan veritabanına erişmek isterseniz aşağıdaki iki satırı aktifleştirin (uncomment):
+    # ports:
+    #   - "${ROUTER_DB_PORT:-5433}:5432"
     volumes:
       - orion_router_postgres_data:/var/lib/postgresql/data
     healthcheck:
