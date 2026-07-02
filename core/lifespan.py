@@ -105,9 +105,9 @@ def _restart_postgres() -> None:
 
     postgres_port = os.getenv("POSTGRES_PORT")
     if postgres_port == "5444":
-        data_dir = root / ".pgdata-dev"
+        data_dir = Path(__file__).parent.parent / ".pgdata-dev"
     elif postgres_port == "5433":
-        data_dir = root / ".pgdata-prod"
+        data_dir = Path(__file__).parent.parent / ".pgdata-prod"
     else:
         logger.warning(f"Unknown POSTGRES_PORT ({postgres_port}), skipping auto-restart.")
         return
