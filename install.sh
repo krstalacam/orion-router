@@ -2,6 +2,12 @@
 set -euo pipefail
 
 MODE="${1:-docker}"
+NO_START=0
+for arg in "$@"; do
+    if [ "$arg" = "--no-start" ]; then
+        NO_START=1
+    fi
+done
 
 echo "=========================================="
 echo "      Orion Router Native Installer       "
@@ -492,6 +498,10 @@ fi
 echo ""
 echo "[OK] Installation complete."
 echo "[OK] 'orionrouter' command is globally registered and ready to use in this terminal and new ones!"
-echo "[OK] Starting Orion Router..."
 
-orionrouter start
+if [ "$NO_START" -eq 0 ]; then
+    echo "[OK] Starting Orion Router..."
+    orionrouter start
+else
+    echo "[OK] Skipped auto-start as requested."
+fi

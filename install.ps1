@@ -1,5 +1,6 @@
 param (
-    [string]$Mode = "docker"
+    [string]$Mode = "docker",
+    [switch]$NoStart
 )
 
 Set-StrictMode -Version Latest
@@ -358,6 +359,10 @@ if ($Mode -eq "local") {
 Write-Host ""
 Write-Host "[OK] Installation complete." -ForegroundColor Green
 Write-Host "[OK] 'orionrouter' command is ready in this terminal and new ones." -ForegroundColor Cyan
-Write-Host "[OK] Starting Orion Router..." -ForegroundColor Yellow
 
-& (Join-Path $TargetFolder "orionrouter.ps1") start
+if (-not $NoStart) {
+    Write-Host "[OK] Starting Orion Router..." -ForegroundColor Yellow
+    & (Join-Path $TargetFolder "orionrouter.ps1") start
+} else {
+    Write-Host "[OK] Skipped auto-start as requested." -ForegroundColor Yellow
+}
