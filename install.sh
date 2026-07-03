@@ -278,46 +278,17 @@ elif [ "$ACTION" = "start" ]; then
         exit 0
     fi
     
-    PORT="20128"
-    if [ -f "$PROJECT_DIR/.env" ]; then
-        ENV_PORT=$(grep -E "^ROUTER_PORT=" "$PROJECT_DIR/.env" | cut -d'=' -f2 | tr -d '\r\n ' || true)
-        if [ -n "$ENV_PORT" ]; then
-            PORT="$ENV_PORT"
-        fi
-    fi
-    URL="http://127.0.0.1:$PORT"
-    
-    if command -v ipconfig >/dev/null 2>&1; then
-        LOCAL_IP=$(ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null || echo "127.0.0.1")
-    elif command -v hostname >/dev/null 2>&1; then
-        LOCAL_IP=$(hostname -I 2>/dev/null | awk '{print $1}' || echo "127.0.0.1")
+    echo -e "\033[92mOrion Router started. Opening logs in a new window...\033[0m"
+    if command -v osascript >/dev/null 2>&1; then
+        osascript -e 'tell application "Terminal" to do script "orionrouter logs"' >/dev/null 2>&1 &
+    elif command -v gnome-terminal >/dev/null 2>&1; then
+        gnome-terminal -- bash -c "orionrouter logs; exec bash" >/dev/null 2>&1 &
+    elif command -v x-terminal-emulator >/dev/null 2>&1; then
+        x-terminal-emulator -e "bash -c 'orionrouter logs; exec bash'" >/dev/null 2>&1 &
     else
-        LOCAL_IP="127.0.0.1"
+        echo -e "\033[96mCould not open a new terminal automatically. To view logs, run: orionrouter logs\033[0m"
     fi
-    LOCAL_URL="http://${LOCAL_IP}:${PORT}"
-
-    echo -e "\n\033[90m────────────────────────────────────────────────\033[0m"
-    echo -e "\033[94m\033[1mORION ROUTER\033[0m\n"
-    echo -e "\033[94m➜\033[0m  \033[1mDashboard:\033[0m   \033[96m\033[4m${URL}\033[0m"
-    echo -e "\033[94m➜\033[0m  \033[1mYerel Ağ:\033[0m    \033[96m\033[4m${LOCAL_URL}\033[0m"
-    echo -e "\033[90m────────────────────────────────────────────────\033[0m"
-    echo -e "\033[90mKomutlar: orionrouter start | stop | logs | help\033[0m\n"
-
-    echo "Streaming live logs... (Will close automatically when stopped)"
-    timeout=0
-    while [ ! -f "$LOG_FILE" ] && [ $timeout -lt 50 ]; do
-        sleep 0.1
-        timeout=$((timeout+1))
-    done
-    if [ -f "$LOG_FILE" ]; then
-        tail -f "$LOG_FILE" &
-        TAIL_PID=$!
-        while kill -0 "$PID" 2>/dev/null; do
-            sleep 0.2
-        done
-        sleep 0.5
-        kill "$TAIL_PID" 2>/dev/null || true
-    fi
+    exit 0
 elif [ "$ACTION" = "stop" ]; then
     STOP_SCRIPT="$PROJECT_DIR/bin/stop.py"
     if [ -f "$STOP_SCRIPT" ]; then
@@ -424,19 +395,6 @@ elif [ "$ACTION" = "start" ]; then
     cd "$PROJECT_DIR"
     docker compose -f "$COMPOSE_FILE" -p orion-router up -d
 
-    if [ "$OPTION" = "-silent" ] || [ "$OPTION" = "--silent" ] || [ "$OPTION" = "silent" ]; then
-        echo -e "\033[92mOrion Router started on Docker (Silent).\033[0m"
-        exit 0
-    fi
-
-    PORT="20128"
-    if [ -f "$PROJECT_DIR/.env" ]; then
-        ENV_PORT=$(grep -E "^ROUTER_PORT=" "$PROJECT_DIR/.env" | cut -d'=' -f2 | tr -d '\r\n ' || true)
-        if [ -n "$ENV_PORT" ]; then
-            PORT="$ENV_PORT"
-        fi
-    fi
-    URL="http://127.0.0.1:$PORT"
     
     if command -v ipconfig >/dev/null 2>&1; then
         LOCAL_IP=$(ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null || echo "127.0.0.1")
