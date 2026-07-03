@@ -235,6 +235,7 @@ cat > "$CLI_SCRIPT" << 'EOF'
 #!/usr/bin/env bash
 
 ACTION="${1:-help}"
+OPTION="${2:-}"
 PROJECT_DIR="${ORION_INSTALL_DIR:-$HOME/.orion-router}"
 PID_FILE="$PROJECT_DIR/.orion.pid"
 LOG_FILE="$PROJECT_DIR/orion_output.log"
@@ -269,7 +270,13 @@ elif [ "$ACTION" = "start" ]; then
     echo "Starting Orion Router locally..."
     cd "$PROJECT_DIR"
     nohup python3 orion.py prod > "$LOG_FILE" 2> "$ERROR_LOG_FILE" &
-    echo $! > "$PID_FILE"
+    PID=$!
+    echo $PID > "$PID_FILE"
+    
+    if [ "$OPTION" = "-silent" ] || [ "$OPTION" = "--silent" ] || [ "$OPTION" = "silent" ]; then
+        echo -e "\033[92mOrion Router started in the background (Silent).\033[0m"
+        exit 0
+    fi
     
     PORT="20128"
     if [ -f "$PROJECT_DIR/.env" ]; then
@@ -296,8 +303,21 @@ elif [ "$ACTION" = "start" ]; then
     echo -e "\033[90m────────────────────────────────────────────────\033[0m"
     echo -e "\033[90mKomutlar: orionrouter start | stop | logs | help\033[0m\n"
 
-    echo "Streaming live logs... (Press Ctrl+C to exit)"
-    tail -f "$LOG_FILE"
+    echo "Streaming live logs... (Will close automatically when stopped)"
+    timeout=0
+    while [ ! -f "$LOG_FILE" ] && [ $timeout -lt 50 ]; do
+        sleep 0.1
+        timeout=$((timeout+1))
+    done
+    if [ -f "$LOG_FILE" ]; then
+        tail -f "$LOG_FILE" &
+        TAIL_PID=$!
+        while kill -0 "$PID" 2>/dev/null; do
+            sleep 0.2
+        done
+        sleep 0.5
+        kill "$TAIL_PID" 2>/dev/null || true
+    fi
 elif [ "$ACTION" = "stop" ]; then
     STOP_SCRIPT="$PROJECT_DIR/bin/stop.py"
     if [ -f "$STOP_SCRIPT" ]; then
@@ -350,6 +370,7 @@ cat > "$CLI_SCRIPT" << 'EOF'
 #!/usr/bin/env bash
 
 ACTION="${1:-help}"
+OPTION="${2:-}"
 PROJECT_DIR="${ORION_INSTALL_DIR:-$HOME/.orion-router}"
 COMPOSE_FILE="docker-compose.ghcr.yml"
 
@@ -403,6 +424,11 @@ elif [ "$ACTION" = "start" ]; then
     cd "$PROJECT_DIR"
     docker compose -f "$COMPOSE_FILE" -p orion-router up -d
 
+    if [ "$OPTION" = "-silent" ] || [ "$OPTION" = "--silent" ] || [ "$OPTION" = "silent" ]; then
+        echo -e "\033[92mOrion Router started on Docker (Silent).\033[0m"
+        exit 0
+    fi
+
     PORT="20128"
     if [ -f "$PROJECT_DIR/.env" ]; then
         ENV_PORT=$(grep -E "^ROUTER_PORT=" "$PROJECT_DIR/.env" | cut -d'=' -f2 | tr -d '\r\n ' || true)
@@ -428,7 +454,7 @@ elif [ "$ACTION" = "start" ]; then
     echo -e "\033[90m────────────────────────────────────────────────\033[0m"
     echo -e "\033[90mKomutlar: orionrouter start | stop | logs | help\033[0m\n"
 
-    echo "Streaming live logs... (Press Ctrl+C to exit)"
+    echo "Streaming live logs... (Will close automatically when stopped)"
     docker compose -f "$COMPOSE_FILE" -p orion-router logs -f
 elif [ "$ACTION" = "stop" ]; then
     echo "Stopping Orion Router on Docker..."
