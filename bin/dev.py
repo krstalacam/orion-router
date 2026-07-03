@@ -58,6 +58,7 @@ def launch(router_port: str) -> list[tuple[str, subprocess.Popen]]:
     backend = subprocess.Popen(
         [sys.executable, "main.py"],
         cwd=ROOT,
+        stdin=subprocess.DEVNULL
     )
     procs.append(("FastAPI", backend))
 
