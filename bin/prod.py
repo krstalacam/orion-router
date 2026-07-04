@@ -44,7 +44,7 @@ from bin.i18n import t
 PG_DATA   = ROOT / ".pgdata-prod"
 PG_LOG    = PG_DATA / "pg.log"
 
-PG_PORT   = 5433
+PG_PORT   = int(read_env("POSTGRES_PORT", ""))
 PG_USER   = "router_user"
 PG_PASS   = "router_pass"
 PG_DB     = "orion_router"

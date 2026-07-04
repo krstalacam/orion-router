@@ -67,7 +67,7 @@ A basic guide for developers who want to customize the system or add new feature
 
 You can use the `orion.py` file in the root directory to manage the development process:
 
-* `python orion.py dev` : Starts the hot-reload active development environment (PostgreSQL: 5444, API: 20129, UI: 3001).
+* `python orion.py dev` : Starts the hot-reload active development environment (PostgreSQL: `POSTGRES_DEV_PORT`, API: `ROUTER_DEV_PORT`, UI: 3001).
 * `python orion.py prod` : Builds the production version and runs it on a single port.
 * `python orion.py stop` : Cleans up all background hanging ports and services.
 

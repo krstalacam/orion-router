@@ -34,6 +34,5 @@ ENV DASHBOARD_OUT_DIR=/dashboard_out
 RUN uv pip install --system --no-cache-dir .
 
 ENV ROUTER_PORT=20128
-EXPOSE 20128
 
 CMD ["python", "main.py"]

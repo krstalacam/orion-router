@@ -67,7 +67,7 @@ Sistemi özelleştirmek veya yeni özellikler eklemek isteyen geliştiriciler i�
 
 Geliştirme sürecini yönetmek için kök dizindeki `orion.py` dosyasını kullanabilirsiniz:
 
-* `python orion.py dev` : Hot-reload aktif geliştirme ortamını başlatır (PostgreSQL: 5444, API: 20129, UI: 3001).
+* `python orion.py dev` : Hot-reload aktif geliştirme ortamını başlatır (PostgreSQL: `POSTGRES_DEV_PORT`, API: `ROUTER_DEV_PORT`, UI: 3001).
 * `python orion.py prod` : Üretim sürümünü derler ve tek portta çalıştırır.
 * `python orion.py stop` : Arka planda asılı kalan tüm portları ve servisleri temizler.
 

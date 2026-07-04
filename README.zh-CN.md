@@ -67,7 +67,7 @@ print(response.choices[0].message.content)
 
 您可以使用根目录中的 `orion.py` 文件来管理开发过程：
 
-* `python orion.py dev` : 启动热重载 (hot-reload) 活跃开发环境（PostgreSQL: 5444，API: 20129，UI: 3001）。
+* `python orion.py dev` : 启动热重载 (hot-reload) 活跃开发环境（PostgreSQL: `POSTGRES_DEV_PORT`，API: `ROUTER_DEV_PORT`，UI: 3001）。
 * `python orion.py prod` : 构建生产版本并在单一端口上运行。
 * `python orion.py stop` : 清理所有在后台挂起的端口和服务。
 

@@ -40,11 +40,11 @@ from bin.i18n import t
 PG_DATA   = ROOT / ".pgdata-dev"
 PG_LOG    = PG_DATA / "pg.log"
 
-PG_PORT   = 5444
+PG_PORT   = int(read_env("POSTGRES_DEV_PORT", ""))
 PG_USER   = "router_user_dev"
 PG_PASS   = "router_pass_dev"
 PG_DB     = "orion_router_dev"
-UI_PORT   = 3001
+UI_PORT   = int(read_env("UI_PORT", ""))
 
 
 # ─────────────────────────────────────────────────────────────────────────────

@@ -255,36 +255,63 @@ def kill_portable_postgres(data_dir: Path, label: str) -> bool:
             pass
     return killed_any
 
-def kill_all_postgres() -> bool:
-    import sys
-    import time
+# Orion Router'ın kullandığı PostgreSQL portları (prod: POSTGRES_PORT, dev: POSTGRES_DEV_PORT)
+_ORION_PG_PORTS = [
+    int(read_env("POSTGRES_PORT", "")),
+    int(read_env("POSTGRES_DEV_PORT", "")),
+]
+
+def kill_postgres_on_ports(ports: list[int] | None = None) -> bool:
+    """Sadece verilen portlarda dinleyen postgres süreçlerini öldürür.
+
+    Kullanıcının başka projeleri için çalışan PostgreSQL instance'larına
+    dokunmaz — sadece Orion Router'ın kullandığı portları hedef alır.
+    """
+    if ports is None:
+        ports = _ORION_PG_PORTS
+
     killed_any = False
-    if sys.platform == "win32":
-        try:
-            result = run(
-                ["tasklist", "/fi", "imagename eq postgres.exe"],
-                capture_output=True,
-                text=True,
-                timeout=DEFAULT_TIMEOUT
-            )
-            if "postgres.exe" in result.stdout.lower():
-                run_silent(["taskkill", "/f", "/t", "/im", "postgres.exe"])
-                dim(t("all_pg_killed"))
-                killed_any = True
-                time.sleep(2.0)
-        except Exception:
-            pass
-    else:
-        try:
-            res = run(["pgrep", "-f", "postgres"], capture_output=True, text=True)
-            if res.stdout.strip():
-                run_silent(["pkill", "-f", "postgres"])
-                dim(t("all_pg_killed"))
-                killed_any = True
-                time.sleep(2.0)
-        except Exception:
-            pass
+    for port in ports:
+        if sys.platform == "win32":
+            try:
+                result = run(
+                    ["netstat", "-aon"],
+                    capture_output=True, text=True, timeout=DEFAULT_TIMEOUT
+                )
+                for line in result.stdout.splitlines():
+                    if f":{port} " in line and "LISTENING" in line:
+                        pid = line.split()[-1]
+                        if pid.isdigit() and pid != "0":
+                            run_silent(["taskkill", "/f", "/t", "/pid", pid])
+                            dim(f"  PostgreSQL (port {port}, PID {pid}) durduruldu.")
+                            killed_any = True
+            except Exception:
+                pass
+        else:
+            try:
+                res = run(["lsof", "-t", f"-i:{port}"], capture_output=True, text=True, timeout=5)
+                if res.returncode == 0:
+                    for pid in res.stdout.splitlines():
+                        if pid.strip().isdigit():
+                            run_silent(["kill", "-9", pid.strip()])
+                            dim(f"  PostgreSQL (port {port}, PID {pid.strip()}) durduruldu.")
+                            killed_any = True
+            except Exception:
+                pass
+
+    if killed_any:
+        time.sleep(1.5)
     return killed_any
+
+
+def kill_all_postgres() -> bool:
+    """KALDIRILDI — kill_postgres_on_ports() kullanın.
+
+    Bu fonksiyon artık sadece Orion portlarını hedef alan
+    kill_postgres_on_ports()'a yönlendiriyor. Sistemdeki tüm
+    postgres süreçlerini körü körüne öldürmez.
+    """
+    return kill_postgres_on_ports()
 
 def kill_orion_pid() -> bool:
     import time
@@ -359,7 +386,8 @@ def download_postgres() -> None:
             sys.exit(1)
 
     import shutil
-    kill_all_postgres()
+    # Sadece Orion'a ait portlardaki postgres'leri kapat, başkalarına dokunma
+    kill_postgres_on_ports()
     shutil.rmtree(TOOLS_DIR / "pgsql", ignore_errors=True)
     (TOOLS_DIR / "pgsql.manifest").unlink(missing_ok=True)
 
