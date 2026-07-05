@@ -171,7 +171,18 @@ def read_env(key: str, default: str) -> str:
                     return v.strip().strip('"').strip("'")
     return default
 
+def is_port_open(port: int) -> bool:
+    import socket
+    try:
+        with socket.create_connection(("127.0.0.1", port), timeout=0.5):
+            return True
+    except Exception:
+        return False
+
 def kill_port(port: int) -> bool:
+    if not is_port_open(port):
+        return False
+
     import shutil
     import time
     killed_any = False
@@ -223,7 +234,10 @@ def kill_port(port: int) -> bool:
         time.sleep(2.0)
     return killed_any
 
-def kill_portable_postgres(data_dir: Path, label: str) -> bool:
+def kill_portable_postgres(data_dir: Path, label: str, port: int | None = None) -> bool:
+    if port is not None and not is_port_open(port):
+        return False
+
     pid_file = data_dir / "postmaster.pid"
 
     if data_dir.exists() and PG_CTL.exists():
@@ -272,6 +286,8 @@ def kill_postgres_on_ports(ports: list[int] | None = None) -> bool:
 
     killed_any = False
     for port in ports:
+        if not is_port_open(port):
+            continue
         if sys.platform == "win32":
             try:
                 result = run(
@@ -352,7 +368,15 @@ def kill_orion_pid() -> bool:
 def free_ports(ports: list[int], pg_data: Path, pg_label: str) -> None:
     ports_str = ", ".join(map(str, ports))
     info(t("cleaning_ports", ports=ports_str))
-    kill_portable_postgres(pg_data, pg_label)
+    
+    # Check if we have postgres port in the list to pass to kill_portable_postgres
+    pg_port = None
+    for port in ports:
+        if port in _ORION_PG_PORTS:
+            pg_port = port
+            break
+            
+    kill_portable_postgres(pg_data, pg_label, port=pg_port)
     for port in ports:
         kill_port(port)
 
