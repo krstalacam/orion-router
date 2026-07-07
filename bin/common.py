@@ -529,7 +529,7 @@ def start_postgres(pg_data: Path, pg_port: int, pg_log: Path, label: str) -> Non
                 "-l", str(pg_log_alt),
                 "-o", f"-p {pg_port} -F",
                 "start",
-            ])
+            ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             if result.returncode == 0:
                 return
             time.sleep(2.0)
@@ -548,7 +548,7 @@ def start_postgres(pg_data: Path, pg_port: int, pg_log: Path, label: str) -> Non
             "-l", str(pg_log),
             "-o", f"-p {pg_port} -F",
             "start",
-        ])
+        ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         if result.returncode == 0:
             return
 

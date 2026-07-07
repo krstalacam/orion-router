@@ -81,6 +81,20 @@ logger = logging.getLogger("service-router")
 # Erişim loglarını tekrar açmak için manuel olarak INFO seviyesine çekiyoruz.
 logging.getLogger("uvicorn.access").setLevel(logging.INFO)
 
+class UvicornAccessFilter(logging.Filter):
+    def filter(self, record: logging.LogRecord) -> bool:
+        msg = record.getMessage()
+        if "GET /dashboard/_next/static/" in msg:
+            return False
+        if record.args and len(record.args) >= 3:
+            method = record.args[1]
+            path = record.args[2]
+            if method == "GET" and path.startswith("/dashboard/_next/static/"):
+                return False
+        return True
+
+logging.getLogger("uvicorn.access").addFilter(UvicornAccessFilter())
+
 class DockerLogFilter(logging.Filter):
     def filter(self, record: logging.LogRecord) -> bool:
         if "Press CTRL+C to quit" in record.getMessage():
