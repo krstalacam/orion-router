@@ -45,6 +45,7 @@ DEFAULT_TIMEOUT = 10.0
 TOOLS_DIR = ROOT / "tools"
 PG_BIN    = TOOLS_DIR / "pgsql" / "bin"
 DASHBOARD = ROOT / "dashboard"
+CACHE_DIR = Path(os.environ.get("LOCALAPPDATA", "")) / "Orion" / "cache"
 
 def find_postgres_binaries():
     import shutil
@@ -101,7 +102,7 @@ PG_DOWNLOAD_URL = (
     "https://get.enterprisedb.com/postgresql/"
     "postgresql-16.3-1-windows-x64-binaries.zip"
 )
-PG_ZIP = TOOLS_DIR / "postgresql.zip"
+PG_ZIP = CACHE_DIR / "postgres.zip"
 
 LOCK_FILE_HANDLE = None
 
@@ -418,27 +419,31 @@ def download_postgres() -> None:
     print()
     info(t("pg_not_found_downloading"))
     TOOLS_DIR.mkdir(parents=True, exist_ok=True)
+    CACHE_DIR.mkdir(parents=True, exist_ok=True)
     
-    def _download_progress(block_num: int, block_size: int, total: int) -> None:
-        if not hasattr(_download_progress, "last_pct"):
-            _download_progress.last_pct = -1
+    if not PG_ZIP.exists():
+        def _download_progress(block_num: int, block_size: int, total: int) -> None:
+            if not hasattr(_download_progress, "last_pct"):
+                _download_progress.last_pct = -1
 
-        done = min(block_num * block_size, total)
-        if total <= 0: return
-        pct  = int(done * 100 / total)
-        mb   = done / 1_048_576
-        bar  = "█" * (pct // 5) + "░" * (20 - pct // 5)
+            done = min(block_num * block_size, total)
+            if total <= 0: return
+            pct  = int(done * 100 / total)
+            mb   = done / 1_048_576
+            bar  = "█" * (pct // 5) + "░" * (20 - pct // 5)
 
-        if sys.stdout.isatty():
-            print(f"\r    [{bar}] {pct:3d}%  {mb:5.1f} MB", end="", flush=True)
-        else:
-            if pct % 10 == 0 and pct != _download_progress.last_pct:
-                _download_progress.last_pct = pct
-                print(f"    [{bar}] {pct:3d}%  {mb:5.1f} MB", flush=True)
+            if sys.stdout.isatty():
+                print(f"\r    [{bar}] {pct:3d}%  {mb:5.1f} MB", end="", flush=True)
+            else:
+                if pct % 10 == 0 and pct != _download_progress.last_pct:
+                    _download_progress.last_pct = pct
+                    print(f"    [{bar}] {pct:3d}%  {mb:5.1f} MB", flush=True)
 
-    urllib.request.urlretrieve(PG_DOWNLOAD_URL, PG_ZIP, _download_progress)
-    print()
-    ok(t("download_complete"))
+        urllib.request.urlretrieve(PG_DOWNLOAD_URL, str(PG_ZIP), _download_progress)
+        print()
+        ok(t("download_complete"))
+    else:
+        info("Portable PostgreSQL zip found in cache.")
 
     info(t("extracting_archive"))
     with zipfile.ZipFile(PG_ZIP, "r") as zf:
@@ -458,7 +463,6 @@ def download_postgres() -> None:
                         print(f"    [{bar}] {pct:3d}%  ({i}/{total_files} files)", flush=True)
         if sys.stdout.isatty():
             print()
-    PG_ZIP.unlink(missing_ok=True)
     generate_manifest(TOOLS_DIR, "postgresql-16.3-1-windows-x64-binaries")
     (TOOLS_DIR / "pgsql.ready").touch()
     ok(t("pg_ready"))
