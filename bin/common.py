@@ -460,6 +460,7 @@ def download_postgres() -> None:
             print()
     PG_ZIP.unlink(missing_ok=True)
     generate_manifest(TOOLS_DIR, "postgresql-16.3-1-windows-x64-binaries")
+    (TOOLS_DIR / "pgsql.ready").touch()
     ok(t("pg_ready"))
 
 def init_database(pg_data: Path, pg_user: str, _repair_attempted: bool = False) -> None:
